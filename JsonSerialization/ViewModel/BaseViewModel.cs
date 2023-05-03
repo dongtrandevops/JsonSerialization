@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿
+using System.Text.Json.Serialization;
 
 namespace JsonSerialization
 {
+    //[JsonConverter(typeof(BasicMyConverter))]
     public class BaseViewModel
     {
-        [JsonIgnore]
-        public string Test { private set; get; }
+        public string Test { set; get; }
     }
 }

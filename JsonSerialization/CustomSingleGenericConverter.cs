@@ -1,59 +1,52 @@
-﻿using System.Reflection;
-using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using JsonSerialization.ViewModel;
-using System.Linq;
+﻿using JsonSerialization.ViewModel;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Collections;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace JsonSerialization
 {
-    public class MyConverter : JsonConverterFactory
+    public class CustomSingleGenericConverter : JsonConverterFactory
     {
         private readonly JsonSerializerOptions _options;
 
-        public MyConverter(JsonSerializerOptions options)
+        public CustomSingleGenericConverter(JsonSerializerOptions options)
         {
             _options = new(options);
         }
 
         public override bool CanConvert(Type typeToConvert)
         {
-            var collectionType = typeToConvert.GetInterface(nameof(IEnumerable));
-
-            if (collectionType != null)
+            if (typeToConvert.FullName.StartsWith("System"))
             {
                 return false;
             }
-
-            //if (typeof(IHasFieldStatus).IsAssignableFrom(typeToConvert))
-            //{
-            //    return true;
-            //}
-
-            return true;
+            if (typeof(IHasFieldStatus).IsAssignableFrom(typeToConvert))
+            {
+                return true;
+            }
+            return false;
         }
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-               typeof(GenericConverter<>).MakeGenericType(typeToConvert),
-               BindingFlags.Instance | BindingFlags.Public,
-               binder: null,
-               args: new object[] { _options },
-               culture: null);
+             typeof(SingleGenericConverter<>).MakeGenericType(typeToConvert),
+             BindingFlags.Instance | BindingFlags.Public,
+             binder: null,
+             args: new object[] { _options },
+             culture: null);
 
             return converter;
         }
 
-        private class GenericConverter<T> : JsonConverter<T> where T : IHasFieldStatus
+        private class SingleGenericConverter<T> : JsonConverter<T> where T : IHasFieldStatus
         {
             private readonly JsonSerializerOptions _options;
 
-            public GenericConverter(JsonSerializerOptions options)
+            public SingleGenericConverter(JsonSerializerOptions options)
             {
                 _options = options;
             }
@@ -115,7 +108,6 @@ namespace JsonSerialization
 
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             {
-                //RemoveFieldStatus(value);
                 JsonSerializer.Serialize(writer, value, _options);
             }
         }
@@ -201,4 +193,3 @@ namespace JsonSerialization
         }
     }
 }
-

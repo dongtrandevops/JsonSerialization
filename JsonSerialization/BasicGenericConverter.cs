@@ -11,29 +11,10 @@ using System.Collections;
 
 namespace JsonSerialization
 {
-    public class MyConverter : JsonConverterFactory
+    public class BasicMyConverter : JsonConverterFactory
     {
-        private readonly JsonSerializerOptions _options;
-
-        public MyConverter(JsonSerializerOptions options)
-        {
-            _options = new(options);
-        }
-
         public override bool CanConvert(Type typeToConvert)
-        {
-            var collectionType = typeToConvert.GetInterface(nameof(IEnumerable));
-
-            if (collectionType != null)
-            {
-                return false;
-            }
-
-            //if (typeof(IHasFieldStatus).IsAssignableFrom(typeToConvert))
-            //{
-            //    return true;
-            //}
-
+        { 
             return true;
         }
 
@@ -43,16 +24,16 @@ namespace JsonSerialization
                typeof(GenericConverter<>).MakeGenericType(typeToConvert),
                BindingFlags.Instance | BindingFlags.Public,
                binder: null,
-               args: new object[] { _options },
+               args: new object[] { options },
                culture: null);
 
             return converter;
         }
 
-        private class GenericConverter<T> : JsonConverter<T> where T : IHasFieldStatus
+        private class GenericConverter<T> : JsonConverter<T>
         {
             private readonly JsonSerializerOptions _options;
-
+        
             public GenericConverter(JsonSerializerOptions options)
             {
                 _options = options;
@@ -67,56 +48,15 @@ namespace JsonSerialization
 
                 while (reader.Read())
                 {
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        var propertyName = reader.GetString();
-                        var propertyInfo = result.GetType().GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                        dic.Add(propertyName, null);
-                        reader.Read();
-                        switch (reader.TokenType)
-                        {
-                            case JsonTokenType.StartObject:
-                            case JsonTokenType.StartArray:
-                            case JsonTokenType.String:
-                            case JsonTokenType.Number:
-                                dic[propertyName] = JsonSerializer.Deserialize<JsonElement>(ref reader, _options);
-                                break;
-                            case JsonTokenType.True:
-                            case JsonTokenType.False:
-                                dic[propertyName] = reader.GetBoolean();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
                 }
 
-                foreach (var item in dic)
-                {
-                    var property = result.GetType().GetProperty(item.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                    if (property != null)
-                    {
-                        if (item.Value.GetType() == typeof(JsonElement))
-                        {
-                            var jsonElement = (JsonElement)item.Value;
-                            var data = jsonElement.Deserialize(property.PropertyType, _options);
-                            property.SetValue(result, data);
-                        }
-                        else
-                        {
-                            property.SetValue(result, item.Value);
-                        }
-                    }
-                }
-
-                UpdateFieldStatus(result, dic);
                 return result;
             }
 
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             {
                 //RemoveFieldStatus(value);
-                JsonSerializer.Serialize(writer, value, _options);
+                JsonSerializer.Serialize(writer, value, value.GetType(), _options);
             }
         }
 

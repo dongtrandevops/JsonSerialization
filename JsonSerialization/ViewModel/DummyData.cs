@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace JsonSerialization.ViewModel
 {
-    public class DummyData : IHasFieldStatus
+    //[JsonConverter(typeof(CustomSingleGenericConverter))]
+    //[JsonConverter(typeof(MyConverter))]
+    public class DummyData 
     {
         public byte Byte { get; set; }
         public sbyte SByte { get; set; }
@@ -21,9 +23,12 @@ namespace JsonSerialization.ViewModel
         public DateTime DateTime { get; set; }
         public DateOnly DateOnly { get; set; }
         public TimeOnly TimeOnly { get; set; }
+
+        [JsonConverter(typeof(CustomStringConverter))]
         public string String { get; set; }
 
         public Pet Pet { get; set; }
+        public Pet Pet1 { get; set; }
 
         public List<Pet> Pets { get; set; }
 
